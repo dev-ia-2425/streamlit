@@ -58,16 +58,16 @@ def all(serie):
 # Dictionnaire des fonctions d'aggrégation
 
 num_functions = {
-   "min":(lambda x: x.min()),
-   "max":(lambda x: x.max()),
-   "mean":(lambda x: x.mean()),
-   "median":(lambda x: x.median())
+   "Min":(lambda x: x.min()),
+   "Max":(lambda x: x.max()),
+   "Moyenne":(lambda x: x.mean()),
+   "Médiane":(lambda x: x.median())
 }
 
 str_functions = {
-   "first": (lambda x: x.agg(func=first)),
-   "summary": (lambda x: x.agg(func=summary)),
-   "all": (lambda x: x.agg(func=all))
+   "Premier": (lambda x: x.agg(func=first)),
+   "Résumé": (lambda x: x.agg(func=summary)),
+   "Tout": (lambda x: x.agg(func=all))
 }
 
 #### INPUTS 
@@ -157,14 +157,6 @@ group_by = st.sidebar.selectbox(
    placeholder = "Choisir une colonne"
 )
 
-# Choisir des colonnes à afficher
-display = st.sidebar.multiselect(
-   "Colonnes à afficher",
-   columns,
-   placeholder = "Afficher",
-   disabled = not(group_by)
-)
-
 # st.sidebar.markdown("#### Fonctions d'aggrégation")
 col_agg_num1, col_agg_num2 = st.sidebar.columns(2)
 
@@ -182,6 +174,18 @@ str_agg = col_agg_num2.selectbox(
    "Colonnes textuelle",
    str_functions.keys(),
    index = 0,
+   disabled = not(group_by)
+)
+
+### TITRE - Affichage
+
+st.sidebar.markdown("# Affichage ")
+
+# Choisir des colonnes à afficher
+display = st.sidebar.multiselect(
+   "Afficher uniquement",
+   columns,
+   placeholder = "Afficher",
    disabled = not(group_by)
 )
 
@@ -254,8 +258,10 @@ if (group_by and num_agg):
    grouped_by = df.groupby(group_by)
    df = grouped_by.agg(func=aggregations)
 
-   if display:
-      df = df[(display)]
+## Affichage 
+
+if display:
+   df = df[(display)]
    
 
 
@@ -264,9 +270,12 @@ if (group_by and num_agg):
 st.title("Ventes de voitures aux États-Unis")
 st.dataframe(df, use_container_width=True)
 
+# L'export en xlsx fait crasher mon PC
+# Le dataframe exporté est donc un csv
+
 st.download_button(
    label = "Exporter", 
-   data = df.to_csv().encode("utf-8"),       # L'export en xlsx fait crasher mon PC
+   data = df.to_csv().encode("utf-8"),       
    file_name = "dataframe.csv",
    mime = "text/csv"
 )
