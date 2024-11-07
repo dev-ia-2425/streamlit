@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from numpy import sort
 
 
 #### CONFIGURATION
@@ -26,17 +27,48 @@ mid_price = (max_price - min_price) / 2                                    # Pri
 first_date = df["saledate"].min()                                          # Date de vente la plus anciene
 last_date = df["saledate"].max()                                           # Date de vente la plus récente
 
-# Dictionnaire des fonctions d'aggrégation, indentifiées par leurs noms
 
-functions = {
+# Fonctions d'aggrégation 
+
+def first(serie):
+   uniques = serie.unique()
+   uniques = sort(uniques)
+
+   res = "[" + str(uniques[0]) + ", ...]"
+   return res
+
+def summary(serie):
+   uniques = serie.unique()
+   uniques = sort(uniques)
+
+   if len(uniques) > 1:
+      res = "[" + str(uniques[0]) + ", ..., " + str(uniques[-1]) + "]"
+   else:
+      res = "[" + str(uniques[0]) + "]"
+   
+   return res
+
+def all(serie):
+    uniques = serie.unique()
+    uniques = sort(uniques)
+
+    res = str(uniques)
+    return res
+
+# Dictionnaire des fonctions d'aggrégation
+
+num_functions = {
    "min":(lambda x: x.min()),
    "max":(lambda x: x.max()),
    "mean":(lambda x: x.mean()),
    "median":(lambda x: x.median())
 }
 
-numericals = ["year", "condition", "odometer", "mmr", "sellingprice"]
-
+str_functions = {
+   "first": (lambda x: x.agg(func=first)),
+   "summary": (lambda x: x.agg(func=summary)),
+   "all": (lambda x: x.agg(func=all))
+}
 
 #### INPUTS 
 
@@ -64,10 +96,10 @@ st.sidebar.markdown("# Filtrer les lignes")
 ## Custom
 
 # Boite à filtres perso
-container = st.sidebar.container()
+filter_container = st.sidebar.container()
 
 # Choisir une colonne de filtre
-custom_filter = container.multiselect(
+custom_filter = filter_container.multiselect(
    "Ajouter un filtre",
    columns,
    placeholder="Choisir une colonne"
@@ -76,10 +108,10 @@ custom_filter = container.multiselect(
 ## Dates des voitures
 
 # Layout des inputs (côte à côte)
-col1, col2 = st.sidebar.columns(2)
+col_date_1, col_date_2 = st.sidebar.columns(2)
 
 # Choisir la date de début
-date_first = col1.date_input(
+date_first = col_date_1.date_input(
    "Vente après le : ",
    value = first_date,
    min_value = first_date, 
@@ -87,7 +119,7 @@ date_first = col1.date_input(
 )
 
 # Choisir la date de fin
-date_last = col2.date_input(
+date_last = col_date_2.date_input(
    "Vente avant le : ",
    value = last_date,
    min_value = date_first, 
@@ -117,32 +149,34 @@ prices = st.sidebar.slider("Prix de vente", min_price, max_price, (min_price, ma
 
 st.sidebar.markdown("# Grouper par")
 
-# Choisir les colonnes à afficher
-display = st.sidebar.multiselect(
-   "Colonnes à afficher", 
-   numericals, 
-   placeholder="Choisir une colonne",
-)
-
 # Choisir une colonne de groupes
-group = st.sidebar.selectbox(
-   "Regrouper par", 
-   columns, 
-   index=None, 
-   placeholder="Choisir une colonne",
-   disabled=not(display)
+group_by = st.sidebar.selectbox(
+   "Regrouper en fonction de",
+   columns,
+   index = None,
+   placeholder = "Choisir une colonne"
 )
 
+st.sidebar.markdown("#### Fonctions d'aggrégation")
+col_agg_num1, col_agg_num2 = st.sidebar.columns(2)
 
-# Choisir une fonction d'aggrégation
-aggregation = st.sidebar.selectbox(
-   "Fonction d'aggrégation", 
-   functions.keys(),
-   index=None,
-   placeholder="Méthode d'aggrégation",
-   disabled=not(group)
+# Choisir une fonction d'aggrégation pour les colonnes numériques
+num_agg = col_agg_num1.selectbox(
+   "Numérique",
+   num_functions.keys(),
+   index = None,
+   placeholder = "Calculer",
+   disabled = not(group_by)
 )
 
+# Choisir une fonction d'aggrégation pour les autres colonnes 
+str_agg = col_agg_num2.selectbox(
+   "Textuelle",
+   str_functions.keys(),
+   index = 1,
+   placeholder = "Présenter",
+   disabled = not(group_by)
+)
 
 #### LOGIQUE
 
@@ -156,31 +190,31 @@ if(order_by):
 
 # Custom
 if(custom_filter):
-   for col in custom_filter:
-      col = str(col)
-      dtype = df[col].dtype
+   for column in custom_filter:
+      column = str(column)
+      dtype = df[column].dtype
 
       # Tester le type
       if dtype == "int64" or dtype == "float64" :   # Numérique
-         min = df[col].min()
-         max = df[col].max()
+         min = df[column].min()
+         max = df[column].max()
 
          # Créer un slider de filtre
-         res = container.slider(col, min, max, (min, max))
+         res = filter_container.slider(column, min, max, (min, max))
          
          # Filtrer
          if(res):
-            df = df[df[col].between(res[0], res[1])]
+            df = df[df[column].between(res[0], res[1])]
 
       else:                                        # Autre
-         values = df[col].unique()
+         values = df[column].unique()
 
          # Créer une boîte de selection de filtre
-         res = container.multiselect(col, options=values)
+         res = filter_container.multiselect(column, options=values)
 
          # Filtrer
          if(res):
-            df = df[df[col].isin(res)]
+            df = df[df[column].isin(res)]
 
 
 # Date de vente
@@ -201,8 +235,19 @@ if(prices[0] and prices[1]):
 
 ## Grouper
 
-if(group and display and aggregation):
-   df = functions[aggregation](df.groupby(group)[display])
+if (group_by and num_agg):
+   aggregations = {}
+   
+   columns = df.columns
+   for column in columns:
+      
+      if df[column].dtype == "object":
+         aggregations[column] = str_functions[str_agg]
+      else:
+         aggregations[column] = num_functions[num_agg]
+      
+   grouped_by = df.groupby(group_by)
+   df = grouped_by.agg(func=aggregations)
 
 
 
