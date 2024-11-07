@@ -34,7 +34,7 @@ def first(serie):
    uniques = serie.unique()
    uniques = sort(uniques)
 
-   res = "[" + str(uniques[0]) + ", ...]"
+   res = str(uniques[0])
    return res
 
 def summary(serie):
@@ -42,9 +42,9 @@ def summary(serie):
    uniques = sort(uniques)
 
    if len(uniques) > 1:
-      res = "[" + str(uniques[0]) + ", ..., " + str(uniques[-1]) + "]"
+      res = str(uniques[0]) + ", ..., " + str(uniques[-1])
    else:
-      res = "[" + str(uniques[0]) + "]"
+      res = str(uniques[0])
    
    return res
 
@@ -157,12 +157,20 @@ group_by = st.sidebar.selectbox(
    placeholder = "Choisir une colonne"
 )
 
-st.sidebar.markdown("#### Fonctions d'aggrégation")
+# Choisir des colonnes à afficher
+display = st.sidebar.multiselect(
+   "Colonnes à afficher",
+   columns,
+   placeholder = "Afficher",
+   disabled = not(group_by)
+)
+
+# st.sidebar.markdown("#### Fonctions d'aggrégation")
 col_agg_num1, col_agg_num2 = st.sidebar.columns(2)
 
 # Choisir une fonction d'aggrégation pour les colonnes numériques
 num_agg = col_agg_num1.selectbox(
-   "Numérique",
+   "Colonnes numérique",
    num_functions.keys(),
    index = None,
    placeholder = "Calculer",
@@ -171,10 +179,9 @@ num_agg = col_agg_num1.selectbox(
 
 # Choisir une fonction d'aggrégation pour les autres colonnes 
 str_agg = col_agg_num2.selectbox(
-   "Textuelle",
+   "Colonnes textuelle",
    str_functions.keys(),
-   index = 1,
-   placeholder = "Présenter",
+   index = 0,
    disabled = not(group_by)
 )
 
@@ -237,10 +244,8 @@ if(prices[0] and prices[1]):
 
 if (group_by and num_agg):
    aggregations = {}
-   
-   columns = df.columns
-   for column in columns:
-      
+
+   for column in columns:   
       if df[column].dtype == "object":
          aggregations[column] = str_functions[str_agg]
       else:
@@ -249,6 +254,9 @@ if (group_by and num_agg):
    grouped_by = df.groupby(group_by)
    df = grouped_by.agg(func=aggregations)
 
+   if display:
+      df = df[(display)]
+   
 
 
 #### VISUALISATION
