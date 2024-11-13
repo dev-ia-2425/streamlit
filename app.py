@@ -27,49 +27,6 @@ mid_price = (max_price - min_price) / 2                                    # Pri
 first_date = df["saledate"].min()                                          # Date de vente la plus anciene
 last_date = df["saledate"].max()                                           # Date de vente la plus récente
 
-
-# Fonctions d'aggrégation 
-
-def first(serie):
-   uniques = serie.unique()
-   uniques = sort(uniques)
-
-   res = str(uniques[0])
-   return res
-
-def summary(serie):
-   uniques = serie.unique()
-   uniques = sort(uniques)
-
-   if len(uniques) > 1:
-      res = str(uniques[0]) + ", ..., " + str(uniques[-1])
-   else:
-      res = str(uniques[0])
-   
-   return res
-
-def all(serie):
-    uniques = serie.unique()
-    uniques = sort(uniques)
-
-    res = str(uniques)
-    return res
-
-# Dictionnaire des fonctions d'aggrégation
-
-num_functions = {
-   "Min":(lambda x: x.min()),
-   "Max":(lambda x: x.max()),
-   "Moyenne":(lambda x: x.mean()),
-   "Médiane":(lambda x: x.median())
-}
-
-str_functions = {
-   "Premier": (lambda x: x.agg(func=first)),
-   "Résumé": (lambda x: x.agg(func=summary)),
-   "Tout": (lambda x: x.agg(func=all))
-}
-
 #### INPUTS 
 
 
@@ -157,6 +114,48 @@ group_by = st.sidebar.selectbox(
    placeholder = "Choisir une colonne"
 )
 
+# Fonctions d'aggrégation 
+
+def first(serie):
+   uniques = serie.unique()
+   uniques = sort(uniques)
+
+   res = str(uniques[0])
+   return res
+
+def summary(serie):
+   uniques = serie.unique()
+   uniques = sort(uniques)
+
+   if len(uniques) > 1:
+      res = str(uniques[0]) + ", ..., " + str(uniques[-1])
+   else:
+      res = str(uniques[0])
+   
+   return res
+
+def all(serie):
+    uniques = serie.unique()
+    uniques = sort(uniques)
+
+    res = str(uniques)
+    return res
+
+# Dictionnaire des fonctions d'aggrégation
+
+num_functions = {
+   "Min":(lambda x: x.min()),
+   "Max":(lambda x: x.max()),
+   "Moyenne":(lambda x: x.mean()),
+   "Médiane":(lambda x: x.median())
+}
+
+str_functions = {
+   "Premier": (lambda x: x.agg(func=first)),
+   "Résumé": (lambda x: x.agg(func=summary)),
+   "Tout": (lambda x: x.agg(func=all))
+}
+
 # st.sidebar.markdown("#### Fonctions d'aggrégation")
 col_agg_num1, col_agg_num2 = st.sidebar.columns(2)
 
@@ -185,8 +184,7 @@ st.sidebar.markdown("# Affichage ")
 display = st.sidebar.multiselect(
    "Afficher uniquement",
    columns,
-   placeholder = "Afficher",
-   disabled = not(group_by)
+   placeholder = "Afficher"
 )
 
 #### LOGIQUE
